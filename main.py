@@ -1,14 +1,15 @@
 import speech_recognition as sr
-import aspose.words as aw
-from docx import Document
-import time
 
 r = sr.Recognizer()
-# create document object
-doc = aw.Document()
 
-def listen_voice():
+'''
+listen to voice audio
+convert it into text
+'''
+def listen_voice(ask = False):
     with sr.Microphone() as source:
+        if(ask):
+            print(ask)
         audio = r.listen(source)
         try:
             voice_data = r.recognize_google(audio)
@@ -18,73 +19,44 @@ def listen_voice():
         except sr.RequestError:
             print('Sorry the servers are down')
 
-def write_file(voice_data):
-
+'''
+create file with desired file name
+returns file pointer
+'''
+def create_file(voice_data):
     # create file name
-    ts = str(int(time.time()/17))
-    t_file_name = 'text' + ts + '.txt'
-    # w_file_name = 'word' + ts + '.docx'
-    # wd_file_name = 'word_doc' + ts + '.docx'
-
-    '''
-    ISSUE #3
-    Cannot overwrite a file using 'w' options
-    this leads to entries not saving
-    hence using 'a' options
-    '''
+    file_name = 'documents/' + voice_data + '.docx'
     # create text file
-    fp = open(t_file_name, 'a')
+    try:
+        # creates new file only if it does not exist
+        fp = open(file_name, 'a+')
+    except FileExistsError:
+        print('file already exists')
+        ask()
+    return fp
 
-    '''
-    ISSUE #1:
-    Document is created successfully
-    however the entries are in reverse order
-    i.e. everything is written bottom to top
-    '''
-    # # create word file
-    # # create a document builder object
-    # builder = aw.DocumentBuilder(doc)
-
-    '''
-    ISSUE #2:
-    Document is created successfully
-    however the entries are not saved into the document
-    '''
-    # # create word using document
-    # document = Document()
-
+'''
+write into document
+takes voice data and file pointer as  arguments
+'''
+def write_file(voice_data, fp):
     # write voice data into file
-    if 'document is complete' not in voice_data:
+    if 'document is complete' != voice_data:
         print(voice_data)
-
-        # wite to text
-        fp.write(voice_data + '\n')
-
-        # # write to word
-        # builder.writeln(voice_data)
-
-        # # write paragraph using document
-        # # document.add_paragraph(voice_data)
+        if 'next line' == voice_data:
+            fp.write('\n')
+        elif 'period' == voice_data:
+            fp.write('.')
+        else:
+            # wite to file
+            fp.write(voice_data + ' ')
 
         print('written, please continue')
-    elif 'document is complete' in voice_data:
+    elif 'document is complete' == voice_data:
         print('closing document')
 
-        '''
-        ISSUE #4:
-        additional document is created after closing the document
-        started happening after introducing timestamp for name
-        '''
         # close text document
         fp.close()
-
-        # # save word document
-        # doc.save(w_file_name)
-
-        # # save using document
-        # document.save(wd_file_name)
-
-        # num = num + 1
 
         print('create new document or exit?')
         voice_data = listen_voice()
@@ -94,9 +66,12 @@ def write_file(voice_data):
             exit()
 
 def ask():
-    print('let us create a document... listening')
+    print('let us create a document')
+    voice_data = listen_voice('what is name of document')
+    fp = create_file(voice_data)
+    print('please begin the document')
     while(1):
         voice_data = listen_voice()
-        write_file(voice_data)
+        write_file(voice_data, fp)
 
 ask()
